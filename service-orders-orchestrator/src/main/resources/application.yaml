@@ -1,0 +1,6 @@
+server:
+  port: ${PORT:8030}
+
+spring:
+  application:
+    name: service-orders-orchestrator

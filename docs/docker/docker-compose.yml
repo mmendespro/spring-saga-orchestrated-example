@@ -1,0 +1,35 @@
+version: '3.8'
+
+networks:
+  localnet:
+    name: localnet
+    driver: bridge
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - localnet
+
+  #service-demo:
+  #  image: service-demo:latest
+  #  build: 
+  #    context: ../service-demo
+  #    args:
+  #      - FORCE_REBUILD=${FORCE_REBUILD}
+  #  ports:
+  #    - "8000:8000"
+  #  deploy:
+  #    resources:
+  #      limits:
+  #        cpus: '0.5'       # Limit to 0.5 CPU core
+  #        memory: 512M      # Limit to 512MB of memory
+  #      reservations:
+  #        cpus: '0.25'      # Reserve 0.25 CPU core
+  #        memory: 256M      # Reserve 256MB of memory

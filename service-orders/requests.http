@@ -1,0 +1,18 @@
+POST http://localhost:8000/orders
+Content-Type: application/json
+
+{
+    "customerId": "90a571ab-91fa-4fda-bf81-f163b69c3e50",
+    "items": [
+        {
+            "productId": "ea869476-aef1-4ab3-a7c6-5a2185ee0ad9",
+            "quantity": 1,
+            "price": 2.30
+        },
+        {
+            "productId": "c38f5477-2795-4433-a863-8ab87a4668c1",
+            "quantity": 10,
+            "price": 1.90
+        }
+    ]
+}

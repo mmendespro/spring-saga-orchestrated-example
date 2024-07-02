@@ -1,0 +1,16 @@
+POST http://localhost:8020/payments
+Content-Type: application/json
+
+{
+    "customerId": "90a571ab-91fa-4fda-bf81-f163b69c3e50",
+    "amout": 100
+}
+
+###
+POST http://localhost:8020/payments
+Content-Type: application/json
+
+{
+    "customerId": "90a571ab-91fa-4fda-bf81-f163b69c3e50",
+    "amout": 500
+}

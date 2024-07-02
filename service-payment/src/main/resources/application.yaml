@@ -1,0 +1,6 @@
+server:
+  port: ${PORT:8020}
+
+spring:
+  application:
+    name: service-payments
