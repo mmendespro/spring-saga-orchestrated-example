@@ -2,13 +2,12 @@ package net.local.poc.orderorch.application.workflow.flows.steps;
 
 import net.local.poc.orderorch.application.ports.clients.PaymentClientPort;
 import net.local.poc.orderorch.application.ports.clients.PaymentClientPort.PaymentInput;
-import net.local.poc.orderorch.application.workflow.api.WorkflowStep;
 import net.local.poc.orderorch.application.workflow.api.WorkflowStepStatus;
 import net.local.poc.orderorch.domain.orders.PurchaseOrder;
 import net.local.poc.orderorch.domain.payment.PaymentStatus;
 import reactor.core.publisher.Mono;
 
-public class PaymentStep implements WorkflowStep {
+public class PaymentStep extends BaseWorkflowStep {
 
     private final PurchaseOrder purchaseOrder;
     private final PaymentClientPort paymentPort;

@@ -3,12 +3,11 @@ package net.local.poc.orderorch.application.workflow.flows.steps;
 import net.local.poc.orderorch.application.ports.clients.InventoryClientPort;
 import net.local.poc.orderorch.application.ports.clients.InventoryClientPort.StockInput;
 import net.local.poc.orderorch.application.ports.clients.InventoryClientPort.StockItemInput;
-import net.local.poc.orderorch.application.workflow.api.WorkflowStep;
 import net.local.poc.orderorch.application.workflow.api.WorkflowStepStatus;
 import net.local.poc.orderorch.domain.orders.PurchaseOrder;
 import reactor.core.publisher.Mono;
 
-public class InventoryStep implements WorkflowStep {
+public class InventoryStep extends BaseWorkflowStep {
 
     private final PurchaseOrder purchaseOrder;
     private final InventoryClientPort inventoryPort;

@@ -63,7 +63,7 @@ public class JdbcPurchaseOrderGateway implements PurchaseOrderGateway {
     public void update(PurchaseOrder order) {
         jdbcClient.sql("UPDATE ORDERS SET ORDER_STATUS = :status WHERE ORDER_ID = :orderId")
                   .param("orderId", order.getOrderId())
-                  .param("STATUS", order.getStatus().name())
+                  .param("status", order.getStatus().name())
                   .update();
 
     }

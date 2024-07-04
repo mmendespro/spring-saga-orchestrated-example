@@ -10,13 +10,11 @@ import net.local.poc.orderorch.application.ports.clients.PaymentClientPort;
 import net.local.poc.orderorch.application.workflow.api.Workflow;
 import net.local.poc.orderorch.application.workflow.api.WorkflowStep;
 import net.local.poc.orderorch.application.workflow.api.WorkflowStepStatus;
-import net.local.poc.orderorch.application.workflow.exceptions.WorkflowException;
 import net.local.poc.orderorch.application.workflow.flows.OrderWorkflow;
 import net.local.poc.orderorch.application.workflow.flows.steps.InventoryStep;
 import net.local.poc.orderorch.application.workflow.flows.steps.PaymentStep;
 import net.local.poc.orderorch.domain.orders.OrderStatus;
 import net.local.poc.orderorch.domain.orders.PurchaseOrder;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -31,31 +29,57 @@ public class OrchestratorService {
     }
 
     public Mono<OrchestratorResponse> processOrderFlow(final PurchaseOrder purchaseOrder) {
-        Workflow orderWorkflow = this.getOrderWorkflow(purchaseOrder);
-        return Flux.fromStream(() -> orderWorkflow.getSteps().stream())
-                   .flatMap(WorkflowStep::process)
-                   .handle(((response, synchronousSink) -> {
-                    if(response)
-                        synchronousSink.next(true);
-                    else
-                        synchronousSink.error(new WorkflowException("create order failed!"));
-                }))
-                .then(Mono.fromCallable(() -> new OrchestratorResponse(purchaseOrder.getOrderId(), OrderStatus.ORDER_COMPLETED, "")))
-                .onErrorResume(ex -> revertOrder(orderWorkflow, purchaseOrder, ex));
+        Workflow orderWorkflow = new OrderWorkflow(List.of(
+            new InventoryStep(purchaseOrder, inventoryPort),
+            new PaymentStep(purchaseOrder, paymentPort)
+        ));
+
+        var result = Mono.just(orderWorkflow)
+            .flatMap(workflow -> processWorkflow(workflow.getSteps()))
+            .doOnSuccess(success -> {
+                if (success) {
+                    System.out.println("Workflow concluído com sucesso!");
+                } else {
+                    System.out.println("Workflow falhou. Reversão concluída.");
+                }
+            })
+            .doFinally(signalType -> {
+                System.out.println("Resultado final do workflow:");
+                orderWorkflow.getSteps().forEach(step -> 
+                    System.out.println(step.getClass().getSimpleName() + ": " + step.getStatus())
+                );
+            }).block();
+
+        var resonse = result ? new OrchestratorResponse(purchaseOrder.getOrderId(), OrderStatus.ORDER_COMPLETED, "Success") : new OrchestratorResponse(purchaseOrder.getOrderId(), OrderStatus.ORDER_CANCELLED, "Cancelled");
+        return Mono.just(resonse);
     }
 
-    private Mono<OrchestratorResponse> revertOrder(final Workflow workflow, final PurchaseOrder purchaseOrder, Throwable ex){
-        return Flux.fromStream(() -> workflow.getSteps().stream())
-                .filter(wf -> wf.getStatus().equals(WorkflowStepStatus.COMPLETE))
-                .flatMap(WorkflowStep::revert)
-                .retry(3)
-                .then(Mono.just(new OrchestratorResponse(purchaseOrder.getOrderId(), OrderStatus.ORDER_CANCELLED, ex.getMessage())));
+    private Mono<Boolean> processWorkflow(List<WorkflowStep> steps) {
+        return processSteps(steps, 0).onErrorResume(e -> {
+                    System.out.println("Erro durante o processamento: " + e.getMessage());
+                    return revertSteps(steps, steps.size() - 1).thenReturn(false);
+               });
     }
 
-    private Workflow getOrderWorkflow(PurchaseOrder purchaseOrder) {
-        WorkflowStep paymentStep = new PaymentStep(purchaseOrder, paymentPort);
-        WorkflowStep inventoryStep = new InventoryStep(purchaseOrder, inventoryPort);
-        return new OrderWorkflow(List.of(paymentStep, inventoryStep));
+    private Mono<Boolean> processSteps(List<WorkflowStep> steps, int index) {
+        if (index >= steps.size()) {
+            return Mono.just(true);
+        }
+        return steps.get(index).process()
+            .flatMap(success -> {
+                if (success) {
+                    return processSteps(steps, index + 1);
+                } else {
+                    return revertSteps(steps, index).thenReturn(false);
+                }
+            });
     }
 
+    private Mono<Void> revertSteps(List<WorkflowStep> steps, int index) {
+        if (index < 0) {
+            return Mono.empty();
+        }
+        WorkflowStep step = steps.get(index);
+        return (step.getStatus() == WorkflowStepStatus.COMPLETE || step.getStatus() == WorkflowStepStatus.FAILED ? step.revert() : Mono.just(true)).then(revertSteps(steps, index - 1));
+    }
 }

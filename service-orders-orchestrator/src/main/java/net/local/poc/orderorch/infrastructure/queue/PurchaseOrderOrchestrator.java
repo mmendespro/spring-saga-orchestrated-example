@@ -26,13 +26,13 @@ public class PurchaseOrderOrchestrator {
     @RabbitListener(queues = {"ORDER_PLACED_TOPIC"})
     void onOrderPlacedEvent(Message<PurchaseOrder> message) {
         log.info("Received placed order {}", message.getPayload());
-        service.processOrderFlow(message.getPayload())
-               .doOnNext((response) -> sendOrderStatus(response));
+        var response = service.processOrderFlow(message.getPayload());
+        sendOrderStatus(response.block());
     }
 
     void sendOrderStatus(OrchestratorResponse response) {
         log.info("Send process result: {}", response.message());
         var key = String.format("%s-order-response", response.orderId());
-        rabbitTemplate.convertAndSend("ORDER_PLACED_TOPIC", response, new CorrelationData(key));
+        rabbitTemplate.convertAndSend("ORDER_ORCH_TOPIC", response, new CorrelationData(key));
     }
 }
