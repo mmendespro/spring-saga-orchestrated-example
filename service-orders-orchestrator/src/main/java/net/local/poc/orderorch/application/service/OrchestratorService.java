@@ -35,20 +35,20 @@ public class OrchestratorService {
         ));
 
         var result = Mono.just(orderWorkflow)
-            .flatMap(workflow -> processWorkflow(workflow.getSteps()))
-            .doOnSuccess(success -> {
-                if (success) {
-                    System.out.println("Workflow concluído com sucesso!");
-                } else {
-                    System.out.println("Workflow falhou. Reversão concluída.");
-                }
-            })
-            .doFinally(signalType -> {
-                System.out.println("Resultado final do workflow:");
-                orderWorkflow.getSteps().forEach(step -> 
-                    System.out.println(step.getClass().getSimpleName() + ": " + step.getStatus())
-                );
-            }).block();
+                         .flatMap(workflow -> processWorkflow(workflow.getSteps()))
+                         .doOnSuccess(success -> {
+                             if (success) {
+                                 System.out.println("Workflow concluído com sucesso!");
+                             } else {
+                                 System.out.println("Workflow falhou. Reversão concluída.");
+                             }
+                         })
+                         .doFinally(signalType -> {
+                             System.out.println("Resultado final do workflow:");
+                             orderWorkflow.getSteps().forEach(step -> 
+                                 System.out.println(step.getClass().getSimpleName() + ": " + step.getStatus())
+                             );
+                         }).block();
 
         var resonse = result ? new OrchestratorResponse(purchaseOrder.getOrderId(), OrderStatus.ORDER_COMPLETED, "Success") : new OrchestratorResponse(purchaseOrder.getOrderId(), OrderStatus.ORDER_CANCELLED, "Cancelled");
         return Mono.just(resonse);
